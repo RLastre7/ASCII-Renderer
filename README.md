@@ -30,9 +30,7 @@ Then follow the build instructions below.
 
 ## Dependencies
 
-You can either install system packages or use vcpkg.
-
-### Option 1: System packages
+### System packages
 
 **Ubuntu/Debian:**
 ```bash
@@ -49,32 +47,6 @@ sudo dnf install SDL2-devel SDL2_image-devel SDL2_ttf-devel opencv-devel
 brew install sdl2 sdl2_image sdl2_ttf opencv
 ```
 
-### Option 2: vcpkg (cross-platform, no system packages needed)
-
-**One-time vcpkg setup (do this once anywhere):**
-
-```bash
-# bash (Linux/macOS/WSL)
-git clone https://github.com/Microsoft/vcpkg.git
-./vcpkg/bootstrap-vcpkg.sh
-export VCPKG_ROOT="$PWD/vcpkg"
-```
-
-```powershell
-# PowerShell (Windows)
-git clone https://github.com/Microsoft/vcpkg.git
-.\vcpkg\bootstrap-vcpkg.bat
-$env:VCPKG_ROOT = "$pwd\vcpkg"
-```
-
-```cmd
-# cmd (Windows)
-git clone https://github.com/Microsoft/vcpkg.git
-cd vcpkg && bootstrap-vcpkg.bat
-set VCPKG_ROOT=C:\full\path\to\vcpkg
-```
-
-
 ## Build
 
 **Linux/macOS (system packages):**
@@ -84,23 +56,11 @@ cmake -B build
 cmake --build build
 ```
 
-**Any platform (vcpkg):**
-```bash
-cd Ascii-Renderer
-cmake --preset vcpkg
-cmake --build build
-```
-
 ## Run
 
 **Linux/macOS:**
 ```bash
 ./build/app
-```
-
-**Windows:**
-```cmd
-.\build\app.exe
 ```
 
 Place a video file at `assets/video.mp4` or edit the path in `src/main.cpp`.
