@@ -21,7 +21,7 @@ int main() {
     cv::Mat frame;
 
     {
-        ASCIIConverter ascii("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        ASCIIConverter ascii("assets/DejaVuSans.ttf",
                              font_size, text_color, gradient, gradient_len);
 
         while (open) {

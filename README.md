@@ -16,6 +16,7 @@ Real-time ASCII art renderer for video files using SDL2 and OpenCV.
 │   └── sdl_context.cpp
 └── assets/           # sample media
     ├── gojo.jpg
+    ├── DejaVuSans.ttf
     └── video.mp4
 ```
 
@@ -42,26 +43,42 @@ brew install sdl2 sdl2_image sdl2_ttf opencv
 
 ### Option 2: vcpkg (cross-platform, no system packages needed)
 
+**Linux/macOS (bash):**
 ```bash
-# Install vcpkg (one-time)
 git clone https://github.com/Microsoft/vcpkg.git
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT="$PWD/vcpkg"
+cmake --preset vcpkg
+cmake --build build
+```
 
-# Build
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/Microsoft/vcpkg.git
+.\vcpkg\bootstrap-vcpkg.bat
+$env:VCPKG_ROOT = "$pwd\vcpkg"
+cmake --preset vcpkg
+cmake --build build
+```
+
+**Windows (cmd):**
+```cmd
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg && bootstrap-vcpkg.bat
+set VCPKG_ROOT=C:\path\to\vcpkg
 cmake --preset vcpkg
 cmake --build build
 ```
 
 ## Build
 
-**With system packages:**
+**Linux/macOS (system packages):**
 ```bash
 cmake -B build
 cmake --build build
 ```
 
-**With vcpkg:**
+**Any platform (vcpkg):**
 ```bash
 cmake --preset vcpkg
 cmake --build build
@@ -69,8 +86,14 @@ cmake --build build
 
 ## Run
 
+**Linux/macOS:**
 ```bash
 ./build/app
+```
+
+**Windows:**
+```cmd
+.\build\app.exe
 ```
 
 Place a video file at `assets/video.mp4` or edit the path in `src/main.cpp`.
