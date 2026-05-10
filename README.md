@@ -43,29 +43,32 @@ brew install sdl2 sdl2_image sdl2_ttf opencv
 
 ### Option 2: vcpkg (cross-platform, no system packages needed)
 
-**Linux/macOS (bash):**
+**One-time vcpkg setup (do this once anywhere):**
+
 ```bash
+# bash (Linux/macOS/WSL)
 git clone https://github.com/Microsoft/vcpkg.git
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT="$PWD/vcpkg"
-cmake --preset vcpkg
-cmake --build build
 ```
 
-**Windows (PowerShell):**
 ```powershell
+# PowerShell (Windows)
 git clone https://github.com/Microsoft/vcpkg.git
 .\vcpkg\bootstrap-vcpkg.bat
 $env:VCPKG_ROOT = "$pwd\vcpkg"
-cmake --preset vcpkg
-cmake --build build
 ```
 
-**Windows (cmd):**
 ```cmd
+# cmd (Windows)
 git clone https://github.com/Microsoft/vcpkg.git
 cd vcpkg && bootstrap-vcpkg.bat
-set VCPKG_ROOT=C:\path\to\vcpkg
+set VCPKG_ROOT=C:\full\path\to\vcpkg
+```
+
+**Then build the project (from the project directory):**
+
+```bash
 cmake --preset vcpkg
 cmake --build build
 ```
