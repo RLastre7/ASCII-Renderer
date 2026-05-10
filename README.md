@@ -2,6 +2,15 @@
 
 Real-time ASCII art renderer for video files using SDL2 and OpenCV.
 
+## Getting Started
+
+```bash
+git clone https://github.com/RLastre7/Ascii-Renderer.git
+cd Ascii-Renderer
+```
+
+Then follow the build instructions below.
+
 ## Structure
 
 ```
@@ -66,23 +75,19 @@ cd vcpkg && bootstrap-vcpkg.bat
 set VCPKG_ROOT=C:\full\path\to\vcpkg
 ```
 
-**Then build the project (from the project directory):**
-
-```bash
-cmake --preset vcpkg
-cmake --build build
-```
 
 ## Build
 
 **Linux/macOS (system packages):**
 ```bash
+cd Ascii-Renderer
 cmake -B build
 cmake --build build
 ```
 
 **Any platform (vcpkg):**
 ```bash
+cd Ascii-Renderer
 cmake --preset vcpkg
 cmake --build build
 ```
