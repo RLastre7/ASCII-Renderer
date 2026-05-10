@@ -17,7 +17,9 @@ private:
 Pixel::Pixel(const SDL_Surface* surface, int x, int y)
     : surface(surface), x(x), y(y) {
     read_pixel();
-    SDL_GetRGB(*pixel, surface->format, &r, &g, &b);
+    Uint32 pixel_val = 0;
+    memcpy(&pixel_val, pixel, surface->format->BytesPerPixel);
+    SDL_GetRGB(pixel_val, surface->format, &r, &g, &b);
 }
 
 void Pixel::read_pixel() {
@@ -33,6 +35,27 @@ void Pixel::write_pixel() {
 void Pixel::set_rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
     this->r = r; this->g = g; this->b = b; this->a = a;
     write_pixel();
+}
+
+static void get_avg_color_in_range(const SDL_Surface* surface, int x, int y, int range,
+                                    int& avg_r, int& avg_g, int& avg_b, int& avg_lum) {
+    int sum_r = 0, sum_g = 0, sum_b = 0;
+    int count = 0;
+    for (int i = x - range; i < x + range; i++) {
+        if (i < 0 || i >= surface->w) continue;
+        for (int j = y - range; j < y + range; j++) {
+            if (j < 0 || j >= surface->h) continue;
+            Pixel p(surface, i, j);
+            sum_r += p.r;
+            sum_g += p.g;
+            sum_b += p.b;
+            count++;
+        }
+    }
+    avg_r = sum_r / count;
+    avg_g = sum_g / count;
+    avg_b = sum_b / count;
+    avg_lum = 0.2126 * avg_r + 0.7152 * avg_g + 0.114 * avg_b;
 }
 
 static int get_avg_in_range(const SDL_Surface* surface, int x, int y, int range) {
@@ -64,9 +87,11 @@ static SDL_Surface* mat_to_surface(const cv::Mat& mat) {
 }
 
 ASCIIConverter::ASCIIConverter(const char* font_path, int font_size, SDL_Color text_color,
-                               const char** gradient, int gradient_len,bool invert)
+                               const char** gradient, int gradient_len, bool invert,
+                               bool color_mode)
     : font_size(font_size), text_color(text_color),
-      gradient(gradient), gradient_len(gradient_len), surface(nullptr),invert(invert) {
+      gradient(gradient), gradient_len(gradient_len), surface(nullptr), invert(invert),
+      color_mode(color_mode) {
     font = TTF_OpenFont(font_path, font_size);
 }
 
@@ -83,7 +108,7 @@ void ASCIIConverter::convert(SDL_Surface* img) {
         for (int x = 0; x < img->w; x++) {
             Pixel p{img, x, y};
             Uint8 avg = 0.2126 * p.r + 0.7152 * p.g + 0.114 * p.b;
-            p.set_rgba(avg, avg, avg);
+            if (!color_mode) p.set_rgba(avg, avg, avg);
             if (avg < min_val) min_val = avg;
             if (avg > max_val) max_val = avg;
         }
@@ -106,13 +131,24 @@ void ASCIIConverter::convert(SDL_Surface* img) {
 
     for (int y = 0; y + step <= img->h; y += step) {
         for (int x = 0; x + step <= img->w; x += step) {
-            int avg = get_avg_in_range(img, x, y, font_size);
+            int avg;
+            SDL_Color c = text_color;
+
+            if (color_mode) {
+                int avg_r, avg_g, avg_b, avg_lum;
+                get_avg_color_in_range(img, x, y, font_size, avg_r, avg_g, avg_b, avg_lum);
+                avg = avg_lum;
+                c = {(Uint8)avg_r, (Uint8)avg_g, (Uint8)avg_b, 255};
+            } else {
+                avg = get_avg_in_range(img, x, y, font_size);
+            }
+
             int idx = ((avg - min_val) * (gradient_len - 1)) / val_range;
             idx = invert ? (gradient_len - 1) - idx : idx;
             if (idx < 0) idx = 0;
             if (idx >= gradient_len) idx = gradient_len - 1;
 
-            SDL_Surface* text = TTF_RenderText_Blended(font, gradient[idx], text_color);
+            SDL_Surface* text = TTF_RenderText_Blended(font, gradient[idx], c);
             SDL_Rect dst = {(x / step) * char_w, (y / step) * char_h, text->w, text->h};
             SDL_BlitSurface(text, NULL, result, &dst);
             SDL_FreeSurface(text);

@@ -11,9 +11,11 @@ struct ASCIIConverter {
     int gradient_len;
     SDL_Surface* surface;
     bool invert;
+    bool color_mode;
 
     ASCIIConverter(const char* font_path, int font_size, SDL_Color text_color,
-                   const char** gradient, int gradient_len,bool invert = false);
+                   const char** gradient, int gradient_len, bool invert = false,
+                   bool color_mode = false);
     ~ASCIIConverter();
 
     void convert(SDL_Surface* img);
