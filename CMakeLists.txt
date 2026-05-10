@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(ascii-art)
 
-list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl2_ttf_local/usr")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sdl2_ttf_local/usr")
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/sdl2_ttf_local/usr")
+    set(SDL2_TTF_LOCAL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/sdl2_ttf_local/usr/include")
+endif()
 
 find_package(SDL2 REQUIRED)
 find_package(SDL2_image REQUIRED)
@@ -16,7 +19,7 @@ add_executable(app
 
 target_include_directories(app PRIVATE
     include
-    "${CMAKE_CURRENT_SOURCE_DIR}/sdl2_ttf_local/usr/include"
+    ${SDL2_TTF_LOCAL_DIR}
 )
 
 target_link_libraries(app PRIVATE
