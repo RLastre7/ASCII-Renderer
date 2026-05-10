@@ -24,7 +24,6 @@ Then follow the build instructions below.
 │   ├── ascii_converter.cpp
 │   └── sdl_context.cpp
 └── assets/           # sample media
-    ├── gojo.jpg
     ├── DejaVuSans.ttf
     └── video.mp4
 ```
