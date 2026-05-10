@@ -1,0 +1,17 @@
+# Build
+build/
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*Zone.Identifier
+
+# Third-party (install via package manager instead)
+sdl2_ttf_local/
