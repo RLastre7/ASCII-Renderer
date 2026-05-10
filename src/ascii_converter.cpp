@@ -98,7 +98,7 @@ void ASCIIConverter::convert(SDL_Surface* img) {
     if (char_w <= 0) char_w = font_size;
     if (char_h <= 0) char_h = font_size;
 
-    int step = font_size * 2;
+    int step = font_size;
     int cols = img->w / step;
     int rows = img->h / step;
 
