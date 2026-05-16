@@ -1,6 +1,8 @@
 #include "ascii_converter.hpp"
 #include <opencv2/imgproc.hpp>
 
+#include <iostream>
+
 struct Pixel {
     Uint8 r, g, b, a;
     Pixel() : r(0), g(0), b(0), a(0) {}
@@ -37,8 +39,7 @@ void Pixel::set_rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
     write_pixel();
 }
 
-static void get_avg_color_in_range(const SDL_Surface* surface, int x, int y, int range,
-                                    int& avg_r, int& avg_g, int& avg_b, int& avg_lum) {
+static SDL_Color get_avg_color_in_range(const SDL_Surface* surface, int x, int y, int range) {
     int sum_r = 0, sum_g = 0, sum_b = 0;
     int count = 0;
     for (int i = x - range; i < x + range; i++) {
@@ -52,13 +53,13 @@ static void get_avg_color_in_range(const SDL_Surface* surface, int x, int y, int
             count++;
         }
     }
-    avg_r = sum_r / count;
-    avg_g = sum_g / count;
-    avg_b = sum_b / count;
-    avg_lum = 0.2126 * avg_r + 0.7152 * avg_g + 0.114 * avg_b;
+    Uint8 avg_r = sum_r / count;
+    Uint8 avg_g = sum_g / count;
+    Uint8 avg_b = sum_b / count;
+    return {avg_r , avg_g , avg_b};
 }
 
-static int get_avg_in_range(const SDL_Surface* surface, int x, int y, int range) {
+static SDL_Color get_avg_in_range(const SDL_Surface* surface, int x, int y, int range) {
     int sum = 0;
     int count = 0;
     for (int i = x - range; i < x + range; i++) {
@@ -70,7 +71,8 @@ static int get_avg_in_range(const SDL_Surface* surface, int x, int y, int range)
             count++;
         }
     }
-    return sum / count;
+    Uint8 avg = sum/count;
+    return {avg,avg,avg};
 }
 
 static SDL_Surface* mat_to_surface(const cv::Mat& mat) {
@@ -86,12 +88,16 @@ static SDL_Surface* mat_to_surface(const cv::Mat& mat) {
     return surf;
 }
 
+static int get_color_avg(const SDL_Color& color){
+    return (color.r + color.g + color.b)/3;
+}
+
 ASCIIConverter::ASCIIConverter(const char* font_path, int font_size, SDL_Color text_color,
                                const char** gradient, int gradient_len, bool invert,
-                               bool color_mode)
+                               bool color_mode, int padding)
     : font_size(font_size), text_color(text_color),
       gradient(gradient), gradient_len(gradient_len), surface(nullptr), invert(invert),
-      color_mode(color_mode) {
+      color_mode(color_mode), padding(padding) {
     font = TTF_OpenFont(font_path, font_size);
 }
 
@@ -100,23 +106,38 @@ ASCIIConverter::~ASCIIConverter() {
     if (font) TTF_CloseFont(font);
 }
 
-void ASCIIConverter::convert(SDL_Surface* img) {
-    int min_val = 255, max_val = 0;
+void ASCIIConverter::compute_luminance_range(SDL_Surface* img, int& min_val, int& max_val) {
+    SDL_LockSurface(img);
+    for (int y = 0; y < img->h; y++) {
+        for (int x = 0; x < img->w; x++) {
+            Pixel p{img, x, y};
+            Uint8 lum = 0.2126 * p.r + 0.7152 * p.g + 0.114 * p.b;
+            if (lum < min_val) min_val = lum;
+            if (lum > max_val) max_val = lum;
+        }
+    }
+    SDL_UnlockSurface(img);
+}
 
+void ASCIIConverter::grey_scale(SDL_Surface* img) {
     SDL_LockSurface(img);
     for (int y = 0; y < img->h; y++) {
         for (int x = 0; x < img->w; x++) {
             Pixel p{img, x, y};
             Uint8 avg = 0.2126 * p.r + 0.7152 * p.g + 0.114 * p.b;
-            if (!color_mode) p.set_rgba(avg, avg, avg);
-            if (avg < min_val) min_val = avg;
-            if (avg > max_val) max_val = avg;
+            p.set_rgba(avg, avg, avg);
         }
     }
     SDL_UnlockSurface(img);
+}
 
-    int val_range = max_val - min_val;
-    if (val_range == 0) val_range = 1;
+void ASCIIConverter::convert(SDL_Surface* img) {
+    int min_val = 255, max_val = 0;
+
+    compute_luminance_range(img, min_val, max_val);
+    if(!color_mode) grey_scale(img);
+
+    int val_range = std::max(max_val - min_val,1);
 
     int char_w, char_h;
     TTF_SizeText(font, "@", &char_w, &char_h);
@@ -127,29 +148,24 @@ void ASCIIConverter::convert(SDL_Surface* img) {
     int cols = img->w / step;
     int rows = img->h / step;
 
-    SDL_Surface* result = SDL_CreateRGBSurface(0, cols * char_w, rows * char_h, 32, 0, 0, 0, 0);
+    SDL_Surface* result = SDL_CreateRGBSurface(0, cols * char_w + 2 * padding, rows * char_h + 2 * padding, 32, 0, 0, 0, 0);
 
     for (int y = 0; y + step <= img->h; y += step) {
         for (int x = 0; x + step <= img->w; x += step) {
-            int avg;
+            
+            //get color 
             SDL_Color c = text_color;
-
-            if (color_mode) {
-                int avg_r, avg_g, avg_b, avg_lum;
-                get_avg_color_in_range(img, x, y, font_size, avg_r, avg_g, avg_b, avg_lum);
-                avg = avg_lum;
-                c = {(Uint8)avg_r, (Uint8)avg_g, (Uint8)avg_b, 255};
-            } else {
-                avg = get_avg_in_range(img, x, y, font_size);
-            }
-
+            if (color_mode) c = get_avg_color_in_range(img,x,y,font_size);
+            else c = get_avg_in_range(img, x, y, font_size);
+            
+            //determine index
+            int avg = get_color_avg(c);
             int idx = ((avg - min_val) * (gradient_len - 1)) / val_range;
-            idx = invert ? (gradient_len - 1) - idx : idx;
-            if (idx < 0) idx = 0;
-            if (idx >= gradient_len) idx = gradient_len - 1;
+            idx = invert ? std::max( (gradient_len - 1) - idx,0 ) : std::min(idx,gradient_len - 1);
 
+            //blit text onto surface
             SDL_Surface* text = TTF_RenderText_Blended(font, gradient[idx], c);
-            SDL_Rect dst = {(x / step) * char_w, (y / step) * char_h, text->w, text->h};
+            SDL_Rect dst = {(x / step) * char_w + padding, (y / step) * char_h + padding, text->w, text->h};
             SDL_BlitSurface(text, NULL, result, &dst);
             SDL_FreeSurface(text);
         }
